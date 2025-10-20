@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const pathname = usePathname();
-  const [query, setQuery] = useState("");
 
   return (
     <header className="sticky top-0 z-50 bg-gray-950/70 backdrop-blur-md border-b border-gray-800">

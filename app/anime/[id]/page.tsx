@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getAnimeDetails } from "@/lib/jikan";
 
 export default async function AnimeDetailPage({
@@ -32,10 +33,13 @@ export default async function AnimeDetailPage({
         </Link>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <img
+      {/* Anime Details */}
+      <div className="flex flex-col md:flex-row gap-8">
+        <Image
           src={anime.images.jpg.large_image_url}
           alt={anime.title}
+          width={400}
+          height={600}
           className="rounded-2xl shadow-lg w-full md:w-1/3 object-cover"
         />
         <div className="flex-1">

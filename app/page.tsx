@@ -4,8 +4,8 @@ import Link from "next/link";
 import { getAnimeFeed, getGenres, searchAnime } from "@/lib/jikan";
 
 export default function HomePage() {
-  const [animes, setAnimes] = useState<any[]>([]);
-  const [genres, setGenres] = useState<any[]>([]);
+  const [animes, setAnimes] = useState<Anime[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<number | undefined>();
   const [selectedYear, setSelectedYear] = useState<number | undefined>();
   const [selectedSort, setSelectedSort] = useState<"score" | "popularity" | "episodes">("score");
@@ -149,7 +149,7 @@ export default function HomePage() {
           }
         >
           <option value="">Alle Genres</option>
-          {genres.map((g: any) => (
+          {genres.map((g: Genre) => (
             <option key={g.mal_id} value={g.mal_id}>
               {g.name}
             </option>
@@ -174,6 +174,7 @@ export default function HomePage() {
         <select
           className="bg-gray-800 text-white px-3 py-2 rounded-lg"
           value={selectedSort}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onChange={(e) => setSelectedSort(e.target.value as any)}
         >
           <option value="score">Score</option>

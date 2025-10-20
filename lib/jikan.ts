@@ -36,6 +36,7 @@ export async function getAnimeFeed(params: FeedParams = {}) {
 
   // gib auch Pagination zurück
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: json.data as any[],
     hasNext: json.pagination?.has_next_page === true,
   };
