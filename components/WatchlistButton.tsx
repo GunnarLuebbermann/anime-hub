@@ -32,7 +32,9 @@ export default function WatchlistButton({ animeId, animeTitle, animeImage }: Wat
     })();
   }, [animeId]);
 
-  const toggleWatchlist = async () => {
+  const toggleWatchlist = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // verhindert, dass der Link reagiert
+    e.preventDefault();  // verhindert, dass der Link das Routing triggert
     if (!userId) return alert("Bitte zuerst einloggen!");
 
     setLoading(true);
@@ -56,12 +58,12 @@ export default function WatchlistButton({ animeId, animeTitle, animeImage }: Wat
     <button
       onClick={toggleWatchlist}
       disabled={loading}
-      className={`absolute top-2 right-2 z-20 rounded-full p-2 bg-black/70 hover:bg-black/90 transition ${
-        inWatchlist ? "text-pink-400" : "text-white"
-      }`}
+      className={`absolute top-2 right-2 z-20 rounded-full p-2 bg-black/70 hover:bg-black/90 transition ${inWatchlist ? "text-pink-400" : "text-white"
+        }`}
       title={inWatchlist ? "Von Watchlist entfernen" : "Zur Watchlist hinzufügen"}
     >
       {inWatchlist ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
     </button>
+
   );
 }

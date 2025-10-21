@@ -47,7 +47,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 bg-gray-950/70 backdrop-blur-md border-b border-gray-800">
+    <header className="sticky top-0 z-50 bg-gray-950/70 backdrop-blur-md border-b border-gray-800">
       <nav className="max-w-7xl mx-auto flex justify-between px-4 py-3 items-center">
         <Link href="/" className="text-2xl font-bold text-pink-400">
           🎌 AnimeHub

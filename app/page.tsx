@@ -196,13 +196,13 @@ export default function HomePage() {
                 ref={isLast ? lastElementRef : null}
                 className="relative group overflow-hidden rounded-2xl hover:shadow-pink-500/20 transition-all duration-500"
               >
-                {/* <WatchlistButton
+                <WatchlistButton
                   animeId={anime.mal_id.toString()}
                   animeTitle={anime.title}
                   animeImage={anime.images.jpg.image_url}
-                /> */}
+                />
                 {anime.rank && (
-                  <div className="absolute top-2 right-2 z-10 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                  <div className="absolute top-2 left-2 z-10 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
                     #{anime.rank}
                   </div>
                 )}

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import WatchlistButton from "@/components/WatchlistButton";
 
 interface WatchlistItem {
   id: string;
@@ -24,7 +25,7 @@ export default function WatchlistPage() {
         setError(null);
 
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError) throw userError;
         if (!user) {
           setError("User not authenticated");
@@ -73,28 +74,32 @@ export default function WatchlistPage() {
   return (
     <main className="max-w-7xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6 text-pink-400">📺 Meine Watchlist</h1>
-      
+
       {list.length === 0 ? (
         <div className="text-center text-gray-400 py-12">
           <p>Your watchlist is empty</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
           {list.map((anime) => (
             <Link href={`/anime/${anime.anime_id}`} key={anime.id}>
               <div className="relative group rounded-xl overflow-hidden hover:scale-105 transition-transform duration-200">
+                <WatchlistButton
+                  animeId={anime.anime_id.toString()}
+                  animeTitle={anime.anime_title}
+                  animeImage={anime.anime_image}
+                />
                 <img
                   src={anime.anime_image}
                   alt={anime.anime_title}
                   className="w-full aspect-[2/3] object-cover"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end p-3">
-                  <p className="text-white font-semibold text-sm line-clamp-2">
-                    {anime.anime_title}
-                  </p>
-                </div>
               </div>
+
+              <h2 className="font-semibold text-sm md:text-base line-clamp-2 text-white drop-shadow mt-2">
+                {anime.anime_title}
+              </h2>
             </Link>
           ))}
         </div>
