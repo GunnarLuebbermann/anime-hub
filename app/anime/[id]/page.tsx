@@ -9,9 +9,22 @@ export default async function AnimeDetailPage({
 }) {
   const anime = await getAnimeDetails(params.id);
 
+  if (!anime) {
+    return (
+      <main className="min-h-screen p-6 max-w-5xl mx-auto text-gray-100">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-400">Anime not found</h1>
+          <Link href="/" className="text-pink-400 hover:text-pink-300 mt-4 inline-block">
+            Back to overview
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen p-6 max-w-5xl mx-auto text-gray-100">
-      {/* Zurück-Button */}
+      {/* Back Button */}
       <div className="mb-6">
         <Link
           href="/"
@@ -29,33 +42,38 @@ export default async function AnimeDetailPage({
               clipRule="evenodd"
             />
           </svg>
-          Zurück zur Übersicht
+          Back to Overview
         </Link>
       </div>
 
       {/* Anime Details */}
       <div className="flex flex-col md:flex-row gap-8">
-        <Image
-          src={anime.images.jpg.large_image_url}
-          alt={anime.title}
-          width={400}
-          height={600}
-          className="rounded-2xl shadow-lg w-full md:w-1/3 object-cover"
-        />
+        <div className="md:w-1/3">
+          <Image
+            src={anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/placeholder-anime.jpg"}
+            alt={anime.title || "Anime image"}
+            width={400}
+            height={600}
+            className="rounded-2xl shadow-lg w-full object-cover"
+            priority
+          />
+        </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-3 text-pink-400">
             {anime.title_english || anime.title}
           </h1>
-          <p className="text-gray-400 mb-4">{anime.synopsis}</p>
+          {anime.synopsis && (
+            <p className="text-gray-400 mb-4">{anime.synopsis}</p>
+          )}
           <div className="flex flex-wrap gap-3 mb-4 text-sm">
             <span className="bg-gray-800 px-3 py-1 rounded-lg">
               ⭐ Score: {anime.score ?? "N/A"}
             </span>
             <span className="bg-gray-800 px-3 py-1 rounded-lg">
-              🎬 Episoden: {anime.episodes ?? "?"}
+              🎬 Episodes: {anime.episodes ?? "?"}
             </span>
             <span className="bg-gray-800 px-3 py-1 rounded-lg">
-              🗓️ Jahr: {anime.year ?? "?"}
+              🗓️ Year: {anime.year ?? "?"}
             </span>
           </div>
 
@@ -63,8 +81,8 @@ export default async function AnimeDetailPage({
           {anime.trailer?.embed_url && (
             <div className="aspect-video rounded-xl overflow-hidden shadow-lg border border-gray-800">
               <iframe
-                src={anime.trailer.embed_url}
-                title="Trailer"
+                src={`${anime.trailer.embed_url}?autoplay=0`}
+                title={`${anime.title} Trailer`}
                 allowFullScreen
                 className="w-full h-full"
               />

@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { getAnimeFeed, getGenres, searchAnime } from "@/lib/jikan";
+import WatchlistButton from "@/components/WatchlistButton";
 
 export default function HomePage() {
   const [animes, setAnimes] = useState<Anime[]>([]);
@@ -9,90 +10,112 @@ export default function HomePage() {
   const [selectedGenre, setSelectedGenre] = useState<number | undefined>();
   const [selectedYear, setSelectedYear] = useState<number | undefined>();
   const [selectedSort, setSelectedSort] = useState<"score" | "popularity" | "episodes">("score");
-
   const [query, setQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
+
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const observer = useRef<IntersectionObserver | null>(null);
-  const lastRef = useRef<HTMLDivElement | null>(null);
 
-  // --- IntersectionObserver für Infinite Scroll ---
-  useEffect(() => {
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) setPage((p) => p + 1);
-      },
-      { rootMargin: "200px" }
-    );
-    if (lastRef.current) observer.current.observe(lastRef.current);
-  }, [hasMore, loading, query, selectedGenre, selectedYear, selectedSort]);
+  // --- FETCH DATA ---
+  const fetchData = useCallback(async (pageNum: number, isNewSearch = false) => {
+    setLoading(true);
 
-  // --- Initial: Genres + erste Seite ---
-  useEffect(() => {
-    (async () => {
-      const [g, first] = await Promise.all([
-        getGenres(),
-        getAnimeFeed({ page: 1, sort: selectedSort }),
-      ]);
-      setGenres(g);
-      setAnimes(first.items);
-      setHasMore(first.hasNext);
-      setLoading(false);
-    })();
-  }, []);
-
-  // --- Paging nachladen ---
-  useEffect(() => {
-    if (page === 1) return;
-    (async () => {
-      setLoading(true);
-      const next = query.trim()
-        ? await searchAnime(query.trim(), page)
+    try {
+      const result = query.trim()
+        ? await searchAnime(query.trim(), pageNum)
         : await getAnimeFeed({
-          page,
+          page: pageNum,
           genre: selectedGenre,
           year: selectedYear,
           sort: selectedSort,
         });
-      setAnimes((prev) => [...prev, ...next.items]);
-      setHasMore(next.hasNext);
+
+      setAnimes(prev => (isNewSearch || pageNum === 1 ? result.items : [...prev, ...result.items]));
+      setHasMore(result.hasNext);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
       setLoading(false);
+    }
+  }, [query, selectedGenre, selectedYear, selectedSort]);
+
+  // --- INITIAL DATA ---
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [genresData, firstPageData] = await Promise.all([
+          getGenres(),
+          getAnimeFeed({ page: 1, sort: selectedSort }),
+        ]);
+        setGenres(genresData);
+        setAnimes(firstPageData.items);
+        setHasMore(firstPageData.hasNext);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, [page]);
+  }, [selectedSort]);
 
-  // --- Filter oder Suche anwenden ---
-  async function handleFilterChange() {
-    setLoading(true);
-    setPage(1);
-    const first = query.trim()
-      ? await searchAnime(query.trim(), 1)
-      : await getAnimeFeed({
-        page: 1,
-        genre: selectedGenre,
-        year: selectedYear,
-        sort: selectedSort,
+  // --- INFINITE SCROLL OBSERVER ---
+  const lastElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage(prev => prev + 1);
+        }
       });
-    setAnimes(first.items);
-    setHasMore(first.hasNext);
-    setLoading(false);
-  }
 
-  async function handleSearch(e: React.FormEvent) {
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
+
+  // --- LOAD NEXT PAGE ---
+  useEffect(() => {
+    if (page > 1) {
+      fetchData(page);
+    }
+  }, [page, fetchData]);
+
+  // --- FILTER / SEARCH HANDLING ---
+  const handleFilterChange = useCallback(async () => {
+    setPage(1);
+    await fetchData(1, true);
+  }, [fetchData]);
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const term = query.trim();
     if (!term) return;
     setActiveSearch(term);
-    await handleFilterChange(); // deine bestehende Fetch-Funktion
-  }
+    setPage(1);
+    await fetchData(1, true);
+  };
+
+  const handleReset = async () => {
+    setQuery("");
+    setSelectedGenre(undefined);
+    setSelectedYear(undefined);
+    setSelectedSort("score");
+    setActiveSearch(null);
+    setPage(1);
+    await fetchData(1, true);
+  };
+
+  const years = Array.from({ length: 25 }, (_, i) => 2025 - i);
 
   return (
-    <main className="min-h-screen p-6 max-w-7xl mx-auto">
-
-      {/* 🔍 Suchfeld */}
+    <main className="min-h-screen p-6 max-w-7xl mx-auto text-white">
+      {/* --- SEARCH FORM --- */}
       <form onSubmit={handleSearch} className="flex justify-center gap-3 mb-6">
         <input
           type="text"
@@ -101,8 +124,6 @@ export default function HomePage() {
           placeholder="Anime suchen..."
           className="px-4 py-2 rounded-lg bg-gray-800 text-white w-64 outline-none focus:ring-2 focus:ring-pink-500"
         />
-
-        {/* Suche */}
         <button
           type="submit"
           disabled={loading}
@@ -110,71 +131,41 @@ export default function HomePage() {
         >
           Suchen
         </button>
-
-        {/* Reset */}
         <button
           type="button"
+          onClick={handleReset}
           disabled={loading}
-          onClick={async () => {
-            // Alles zurücksetzen
-            setQuery("");
-            setSelectedGenre(undefined);
-            setSelectedYear(undefined);
-            setSelectedSort("score");
-            setActiveSearch(null); // 👈 wichtig: Suchstatus zurücksetzen
-            setPage(1);
-            setLoading(true);
-
-            // Top-Animes neu laden
-            const top = await getAnimeFeed({ page: 1, sort: "score" });
-            setAnimes(top.items);
-            setHasMore(top.hasNext);
-            setLoading(false);
-          }}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition text-white"
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition"
         >
           Reset
         </button>
-
       </form>
 
-
-      {/* Filter */}
+      {/* --- FILTERS --- */}
       <div className="flex flex-wrap justify-center gap-3 mb-8">
         <select
           className="bg-gray-800 text-white px-3 py-2 rounded-lg"
           value={selectedGenre ?? ""}
-          onChange={(e) =>
-            setSelectedGenre(e.target.value ? Number(e.target.value) : undefined)
-          }
+          onChange={(e) => setSelectedGenre(e.target.value ? Number(e.target.value) : undefined)}
         >
           <option value="">Alle Genres</option>
-          {genres.map((g: Genre) => (
-            <option key={g.mal_id} value={g.mal_id}>
-              {g.name}
-            </option>
+          {genres.map((genre) => (
+            <option key={genre.mal_id} value={genre.mal_id}>{genre.name}</option>
           ))}
         </select>
 
         <select
           className="bg-gray-800 text-white px-3 py-2 rounded-lg"
           value={selectedYear ?? ""}
-          onChange={(e) =>
-            setSelectedYear(e.target.value ? Number(e.target.value) : undefined)
-          }
+          onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : undefined)}
         >
           <option value="">Alle Jahre</option>
-          {Array.from({ length: 25 }, (_, i) => 2025 - i).map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
+          {years.map((year) => <option key={year}>{year}</option>)}
         </select>
 
         <select
           className="bg-gray-800 text-white px-3 py-2 rounded-lg"
           value={selectedSort}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onChange={(e) => setSelectedSort(e.target.value as any)}
         >
           <option value="score">Score</option>
@@ -195,39 +186,60 @@ export default function HomePage() {
         {activeSearch ? `🔍 Suchergebnisse für "${activeSearch}"` : "🔥 Top Animes"}
       </h1>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-        {animes.map((anime, i) => (
-          <Link href={`/anime/${anime.mal_id}`} key={anime.mal_id}>
-            <div
-              ref={i === animes.length - 1 ? lastRef : null}
-              className="relative group overflow-hidden rounded-2xl hover:shadow-pink-500/20 transition-all duration-500"
-            >
-              {anime.rank && (
-                <div className="absolute top-2 right-2 z-10 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
-                  #{anime.rank}
+      {/* --- ANIME GRID --- */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
+        {animes.map((anime, index) => {
+          const isLast = index === animes.length - 1;
+          return (
+            <Link href={`/anime/${anime.mal_id}`} key={`${anime.mal_id}-${index}`}>
+              <div
+                ref={isLast ? lastElementRef : null}
+                className="relative group overflow-hidden rounded-2xl hover:shadow-pink-500/20 transition-all duration-500"
+              >
+                {/* <WatchlistButton
+                  animeId={anime.mal_id.toString()}
+                  animeTitle={anime.title}
+                  animeImage={anime.images.jpg.image_url}
+                /> */}
+                {anime.rank && (
+                  <div className="absolute top-2 right-2 z-10 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                    #{anime.rank}
+                  </div>
+                )}
+                <img
+                  src={anime.images.jpg.image_url}
+                  alt={anime.title}
+                  className="w-full aspect-[2/3] object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                  <span className="text-white text-xs bg-black/60 px-2 py-1 rounded backdrop-blur-sm">
+                    ⭐ {anime.score ?? "N/A"}
+                  </span>
                 </div>
-              )}
-              <img
-                src={anime.images.jpg.image_url}
-                alt={anime.title}
-                className="w-full aspect-[2/3] object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                <h2 className="font-semibold text-sm md:text-base line-clamp-2 text-white drop-shadow">
-                  {anime.title_english || anime.title}
-                </h2>
-                <span className="text-white text-xs bg-black/60 px-2 py-1 rounded backdrop-blur-sm">
-                  ⭐ {anime.score ?? "N/A"}
-                </span>
               </div>
-            </div>
-          </Link>
-        ))}
+
+              <h2 className="font-semibold text-sm md:text-base line-clamp-2 text-white drop-shadow mt-2">
+                {anime.title_english || anime.title}
+              </h2>
+              <h4 className="font-medium text-xs md:text-sm line-clamp-2 text-white opacity-75">
+                {anime.genres?.[0]?.name}
+              </h4>
+            </Link>
+          );
+        })}
       </div>
 
-      {loading && <p className="text-center text-gray-400 mt-6">Lade weitere Animes...</p>}
+      {loading && (
+        <div className="text-center text-gray-400 mt-6">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mr-2"></div>
+          Lade weitere Animes...
+        </div>
+      )}
+
+      {!hasMore && !loading && (
+        <div className="text-center text-gray-500 mt-6">✨ Keine weiteren Ergebnisse ✨</div>
+      )}
     </main>
   );
 }
