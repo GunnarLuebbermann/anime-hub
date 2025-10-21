@@ -163,9 +163,11 @@ export default function HomePage() {
           {years.map((year) => <option key={year}>{year}</option>)}
         </select>
 
+        
         <select
           className="bg-gray-800 text-white px-3 py-2 rounded-lg"
           value={selectedSort}
+          /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
           onChange={(e) => setSelectedSort(e.target.value as any)}
         >
           <option value="score">Score</option>

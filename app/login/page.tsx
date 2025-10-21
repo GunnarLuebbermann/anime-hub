@@ -28,7 +28,7 @@ export default function LoginPage() {
       }
 
       router.push("/");
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -80,7 +80,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-gray-400 text-sm text-center mt-2">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-pink-400 hover:underline">
             Sign up
           </Link>
