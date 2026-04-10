@@ -11,17 +11,36 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) setError(error.message);
+      // Achtung: Kein router.push nötig — Supabase übernimmt Redirect
+    } catch (err) {
+      setError("Google login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ 
-        email: email.trim(), 
-        password 
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
-      
+
       if (error) {
         setError(error.message);
         return;
@@ -42,7 +61,7 @@ export default function LoginPage() {
         className="bg-gray-900 p-6 rounded-2xl shadow-lg w-full max-w-sm flex flex-col gap-4"
       >
         <h1 className="text-2xl font-bold text-pink-400 text-center">Login</h1>
-        
+
         {error && (
           <div className="text-red-400 text-sm text-center bg-red-900/20 p-2 rounded">
             {error}
@@ -59,7 +78,7 @@ export default function LoginPage() {
           disabled={isLoading}
           autoComplete="email"
         />
-        
+
         <input
           type="password"
           placeholder="Password"
@@ -77,6 +96,20 @@ export default function LoginPage() {
           className="bg-pink-600 hover:bg-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg py-2 transition-colors"
         >
           {isLoading ? "Signing in..." : "Login"}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="bg-white hover:bg-gray-100 text-gray-900 font-semibold rounded-lg py-2 transition-colors flex items-center justify-center gap-2"
+        >
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            alt="Google Logo"
+            className="w-5 h-5"
+          />
+          Sign in with Google
         </button>
 
         <p className="text-gray-400 text-sm text-center mt-2">
