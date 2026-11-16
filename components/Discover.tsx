@@ -13,7 +13,7 @@ import {
   getGenres,
   type AnimeTypeKey,
   type SortKey,
-} from "@/lib/jikan";
+} from "@/lib/anilist";
 
 type View = "top" | "season";
 
@@ -30,7 +30,7 @@ function parseFilters(params: URLSearchParams) {
   return {
     view: (params.get("view") === "season" ? "season" : "top") as View,
     q: params.get("q")?.trim() ?? "",
-    genre: num("genre"),
+    genre: params.get("genre")?.trim() || undefined,
     year: num("year"),
     type: type && type in ANIME_TYPES ? (type as AnimeTypeKey) : undefined,
     sort: sort && sort in SORT_OPTIONS ? (sort as SortKey) : ("score" as SortKey),
@@ -97,10 +97,10 @@ export default function Discover() {
   });
 
   const animes = useMemo(() => {
-    const seen = new Set<number>();
+    const seen = new Set<string>();
     return (feed.data?.pages ?? [])
       .flatMap((p) => p.items)
-      .filter((a) => (seen.has(a.mal_id) ? false : (seen.add(a.mal_id), true)));
+      .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)));
   }, [feed.data]);
 
   // Infinite Scroll
@@ -120,7 +120,7 @@ export default function Discover() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const hasActiveFilters = Boolean(filters.q || filters.genre || filters.year || filters.type || filters.sort !== "score");
-  const genreName = genresQuery.data?.find((g) => g.mal_id === filters.genre)?.name;
+  const genreName = filters.genre;
 
   const heading =
     filters.view === "season"
@@ -128,8 +128,8 @@ export default function Discover() {
       : filters.q
         ? `🔍 Ergebnisse für „${filters.q}“`
         : [
-            filters.sort === "members" ? "💖 Beliebteste" : filters.sort === "newest" ? "🆕 Neueste" : "🔥 Top",
-            filters.type ? ANIME_TYPES[filters.type] : "Animes",
+            filters.sort === "members" ? "💖 Beliebteste" : filters.sort === "trending" ? "📈 Angesagte" : filters.sort === "newest" ? "🆕 Neueste" : "🔥 Top",
+            filters.type ? ANIME_TYPES[filters.type].label : "Animes",
             genreName && `· ${genreName}`,
             filters.year && `· ${filters.year}`,
           ]
@@ -216,8 +216,8 @@ export default function Discover() {
             >
               <option value="">Alle Genres</option>
               {genresQuery.data?.map((genre) => (
-                <option key={genre.mal_id} value={genre.mal_id}>
-                  {genre.name}
+                <option key={genre} value={genre}>
+                  {genre}
                 </option>
               ))}
             </select>
@@ -245,9 +245,9 @@ export default function Discover() {
           onChange={(e) => setParams({ type: e.target.value || undefined })}
         >
           <option value="">Alle Typen</option>
-          {Object.entries(ANIME_TYPES).map(([value, label]) => (
+          {Object.entries(ANIME_TYPES).map(([value, t]) => (
             <option key={value} value={value}>
-              {label}
+              {t.label}
             </option>
           ))}
         </select>
@@ -308,7 +308,7 @@ export default function Discover() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
           {animes.map((anime, i) => (
-            <AnimeCard key={anime.mal_id} anime={anime} priority={i < 6} />
+            <AnimeCard key={anime.id} anime={anime} priority={i < 6} />
           ))}
           {isFetchingNextPage &&
             Array.from({ length: 6 }, (_, i) => <AnimeCardSkeleton key={`s-${i}`} />)}
