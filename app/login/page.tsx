@@ -1,124 +1,116 @@
 "use client";
-import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-export default function LoginPage() {
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { isSupabaseConfigured, requireSupabase, safeNextPath } from "@/lib/supabaseClient";
+import { useAuth } from "@/components/providers/AuthProvider";
+import GoogleButton from "@/components/auth/GoogleButton";
+import {
+  AuthCard,
+  Divider,
+  FormMessage,
+  inputClass,
+  primaryButtonClass,
+  translateAuthError,
+} from "@/components/auth/AuthCard";
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeNextPath(searchParams.get("next"));
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
-    setError(null);
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) setError(error.message);
-      // Achtung: Kein router.push nötig — Supabase übernimmt Redirect
-    } catch (err) {
-      setError("Google login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Bereits angemeldet -> weiterleiten
+  useEffect(() => {
+    if (user) router.replace(next);
+  }, [user, next, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
+      const { error } = await requireSupabase().auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
-        setError(error.message);
+        setError(translateAuthError(error.message));
         return;
       }
-
-      router.push("/");
+      router.replace(next);
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Ein unerwarteter Fehler ist aufgetreten. Bitte versuch es erneut.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-950 px-4">
-      <form
-        onSubmit={handleLogin}
-        className="bg-gray-900 p-6 rounded-2xl shadow-lg w-full max-w-sm flex flex-col gap-4"
-      >
-        <h1 className="text-2xl font-bold text-pink-400 text-center">Login</h1>
+  if (!isSupabaseConfigured) {
+    return (
+      <AuthCard title="Login">
+        <FormMessage kind="error">Supabase ist nicht konfiguriert. Siehe README.</FormMessage>
+      </AuthCard>
+    );
+  }
 
-        {error && (
-          <div className="text-red-400 text-sm text-center bg-red-900/20 p-2 rounded">
-            {error}
-          </div>
-        )}
+  return (
+    <AuthCard title="Login">
+      <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        {error && <FormMessage kind="error">{error}</FormMessage>}
 
         <input
           type="email"
-          placeholder="Email"
+          placeholder="E-Mail"
+          aria-label="E-Mail"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-pink-500"
+          className={inputClass}
           required
           disabled={isLoading}
           autoComplete="email"
         />
-
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Passwort"
+          aria-label="Passwort"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-pink-500"
+          className={inputClass}
           required
           disabled={isLoading}
           autoComplete="current-password"
         />
-
-        <button
-          type="submit"
-          disabled={isLoading || !email || !password}
-          className="bg-pink-600 hover:bg-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg py-2 transition-colors"
-        >
-          {isLoading ? "Signing in..." : "Login"}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={isLoading}
-          className="bg-white hover:bg-gray-100 text-gray-900 font-semibold rounded-lg py-2 transition-colors flex items-center justify-center gap-2"
-        >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="Google Logo"
-            className="w-5 h-5"
-          />
-          Sign in with Google
-        </button>
-
-        <p className="text-gray-400 text-sm text-center mt-2">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-pink-400 hover:underline">
-            Sign up
+        <div className="text-right -mt-2">
+          <Link href="/forgot-password" className="text-xs text-gray-400 hover:text-pink-400">
+            Passwort vergessen?
           </Link>
-        </p>
+        </div>
+
+        <button type="submit" disabled={isLoading || !email || !password} className={primaryButtonClass}>
+          {isLoading ? "Anmelden…" : "Login"}
+        </button>
       </form>
-    </main>
+
+      <Divider />
+      <GoogleButton next={next} onError={(m) => setError(translateAuthError(m))} disabled={isLoading} />
+
+      <p className="text-gray-400 text-sm text-center mt-2">
+        Noch keinen Account?{" "}
+        <Link href={`/signup?next=${encodeURIComponent(next)}`} className="text-pink-400 hover:underline">
+          Registrieren
+        </Link>
+      </p>
+    </AuthCard>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

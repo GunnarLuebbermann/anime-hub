@@ -1,69 +1,50 @@
 "use client";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { addToWatchlist, removeFromWatchlist, isInWatchlist } from "@/lib/watchlist";
+
 import { Bookmark, BookmarkCheck } from "lucide-react";
+import { useWatchlist } from "@/lib/useWatchlist";
 
 interface WatchlistButtonProps {
   animeId: string;
   animeTitle: string;
   animeImage: string;
+  episodesTotal?: number | null;
+  className?: string;
 }
 
-export default function WatchlistButton({ animeId, animeTitle, animeImage }: WatchlistButtonProps) {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [inWatchlist, setInWatchlist] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+/** Kleiner Lesezeichen-Button für Anime-Karten. */
+export default function WatchlistButton({
+  animeId,
+  animeTitle,
+  animeImage,
+  episodesTotal,
+  className = "absolute top-2 right-2 z-20",
+}: WatchlistButtonProps) {
+  const watchlist = useWatchlist();
+  const inWatchlist = watchlist.has(animeId);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
-
-      try {
-        const exists = await isInWatchlist(user.id, animeId);
-        setInWatchlist(exists);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [animeId]);
-
-  const toggleWatchlist = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // verhindert, dass der Link reagiert
-    e.preventDefault();  // verhindert, dass der Link das Routing triggert
-    if (!userId) return alert("Bitte zuerst einloggen!");
-
-    setLoading(true);
-    try {
-      if (inWatchlist) {
-        await removeFromWatchlist(userId, animeId);
-        setInWatchlist(false);
-      } else {
-        await addToWatchlist(userId, { id: animeId, title: animeTitle, image: animeImage });
-        setInWatchlist(true);
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Fehler beim Aktualisieren der Watchlist");
-    } finally {
-      setLoading(false);
-    }
+  const toggle = (e: React.MouseEvent) => {
+    // Klick soll nicht den umgebenden Link auslösen
+    e.preventDefault();
+    e.stopPropagation();
+    if (inWatchlist) watchlist.remove(animeId);
+    else watchlist.add({ animeId, title: animeTitle, image: animeImage, episodesTotal });
   };
+
+  const label = inWatchlist ? "Von Watchlist entfernen" : "Zur Watchlist hinzufügen";
 
   return (
     <button
-      onClick={toggleWatchlist}
-      disabled={loading}
-      className={`absolute top-2 right-2 z-20 rounded-full p-2 bg-black/70 hover:bg-black/90 transition ${inWatchlist ? "text-pink-400" : "text-white"
-        }`}
-      title={inWatchlist ? "Von Watchlist entfernen" : "Zur Watchlist hinzufügen"}
+      type="button"
+      onClick={toggle}
+      disabled={watchlist.isLoading}
+      aria-pressed={inWatchlist}
+      aria-label={label}
+      title={label}
+      className={`${className} rounded-full p-2 bg-black/70 hover:bg-black/90 backdrop-blur-sm transition disabled:opacity-50 ${
+        inWatchlist ? "text-pink-400" : "text-white"
+      }`}
     >
       {inWatchlist ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
     </button>
-
   );
 }
