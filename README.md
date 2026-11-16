@@ -1,17 +1,18 @@
 # 🎌 AnimeHub
 
 Entdecke, bewerte und teile deine Lieblingsanimes. AnimeHub nutzt die öffentliche
-[Jikan API](https://jikan.moe) (MyAnimeList-Daten) und [Supabase](https://supabase.com)
+[AniList GraphQL API](https://docs.anilist.co) (kostenlos, ohne API-Key) und [Supabase](https://supabase.com)
 für Accounts und die persönliche Watchlist.
 
 ## Features
 
 - **Entdecken** – Top-Animes mit Infinite Scroll, Suche (entprellt), Filter nach Genre,
-  Jahr und Typ sowie Sortierung nach Bewertung, Beliebtheit, Datum oder Titel.
+  Jahr und Typ sowie Sortierung nach Bewertung, Beliebtheit, Trend, Datum oder Titel.
   Alle Filter stehen in der URL und lassen sich teilen.
 - **Aktuelle Saison** – alle Animes, die gerade laufen.
 - **Detailseite** – Score, Rang, Infos, Genres, Handlung, Trailer, Streaming-Links,
-  Charaktere mit Sprecher*innen, ähnliche Animes und Teilen-Button.
+  Charaktere mit Sprecher*innen, ähnliche Animes, nächste Folge (bei laufenden
+  Serien) und Teilen-Button.
 - **Watchlist** – Status (Geplant, Schaue ich, Abgeschlossen, Pausiert, Abgebrochen),
   Folgen-Fortschritt, eigene Bewertung (1–10), Statistik, Filter und Sortierung.
   Änderungen werden sofort (optimistisch) angezeigt.
@@ -44,7 +45,7 @@ npm run dev                  # http://localhost:3000
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL des Supabase-Projekts |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Öffentlicher `anon`-Key |
-| `NEXT_PUBLIC_JIKAN_API_URL` | Optional: eigene Jikan-Instanz (Standard: `https://api.jikan.moe/v4`) |
+| `NEXT_PUBLIC_ANILIST_API_URL` | Optional: anderer GraphQL-Endpunkt (Standard: `https://graphql.anilist.co`) |
 
 ## Skripte
 
@@ -63,7 +64,8 @@ app/                 Seiten (App Router)
   watchlist/         Persönliche Watchlist
   login, signup, forgot-password, auth/…   Authentifizierung
 components/          UI-Komponenten, Provider (Auth, Toasts, React Query)
-lib/jikan.ts         Jikan-Client mit Rate-Limit-Handling und Retries
+lib/anilist.ts       AniList-Client (GraphQL) mit Rate-Limit-Handling und Retries
+lib/labels.ts        Deutsche Bezeichnungen für Format, Status, Saison, Vorlage
 lib/watchlist.ts     Supabase-Zugriff auf die Watchlist
 lib/useWatchlist.ts  Hook mit Caching und optimistischen Updates
 supabase/schema.sql  Datenbankschema + RLS-Policies
@@ -72,7 +74,11 @@ types/anime.ts       Gemeinsame Typen
 
 ## Hinweise
 
-- Die Jikan API erlaubt ca. 3 Anfragen pro Sekunde. Der Client verteilt Anfragen und
-  wiederholt sie bei `429` automatisch; Serverseitig werden Antworten gecacht.
+- AniList erlaubt ca. 90 Anfragen pro Minute (zeitweise 30). Der Client verteilt Anfragen,
+  wiederholt sie bei `429` automatisch (unter Beachtung von `Retry-After`) und die
+  Detailseite lädt alle Daten mit einer einzigen Anfrage. Serverseitig wird gecacht.
+- Anime-IDs in URLs und in der Watchlist sind MyAnimeList-IDs (AniList liefert sie als
+  `idMal` mit). Bestehende Watchlist-Einträge bleiben dadurch gültig. Animes ohne
+  MAL-ID bekommen die ID `al-<AniList-ID>`.
 - Deployment z. B. auf Vercel: Umgebungsvariablen dort eintragen und die Domain
   in Supabase als Redirect-URL freigeben.

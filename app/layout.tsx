@@ -24,12 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex-1 pt-4">{children}</div>
           <footer className="border-t border-gray-900 mt-12 py-6 text-center text-xs text-gray-500 px-4">
             Daten von{" "}
-            <a href="https://jikan.moe" target="_blank" rel="noreferrer" className="hover:text-pink-400 underline">
-              Jikan
-            </a>{" "}
-            /{" "}
-            <a href="https://myanimelist.net" target="_blank" rel="noreferrer" className="hover:text-pink-400 underline">
-              MyAnimeList
+            <a href="https://anilist.co" target="_blank" rel="noreferrer" className="hover:text-pink-400 underline">
+              AniList
             </a>
             . AnimeHub ist ein inoffizielles Fanprojekt.
           </footer>

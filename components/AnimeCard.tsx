@@ -2,16 +2,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import WatchlistButton from "@/components/WatchlistButton";
-import { animeImage, animeTitle } from "@/lib/jikan";
+import { formatLabel } from "@/lib/labels";
 import type { Anime } from "@/types/anime";
 
 export default function AnimeCard({ anime, priority = false }: { anime: Anime; priority?: boolean }) {
-  const title = animeTitle(anime);
-  const image = animeImage(anime);
+  const { title, image } = anime;
 
   return (
-    <Link href={`/anime/${anime.mal_id}`} className="group block focus:outline-none">
-      <div className="relative overflow-hidden rounded-2xl bg-gray-900 aspect-[2/3] ring-1 ring-gray-800 group-hover:ring-pink-500/60 group-focus-visible:ring-2 group-focus-visible:ring-pink-500 transition">
+    <Link href={`/anime/${anime.id}`} className="group block focus:outline-none">
+      <div
+        style={anime.color ? { backgroundColor: anime.color } : undefined}
+        className="relative overflow-hidden rounded-2xl bg-gray-900 aspect-[2/3] ring-1 ring-gray-800 group-hover:ring-pink-500/60 group-focus-visible:ring-2 group-focus-visible:ring-pink-500 transition">
         {image && (
           <Image
             src={image}
@@ -23,7 +24,7 @@ export default function AnimeCard({ anime, priority = false }: { anime: Anime; p
           />
         )}
         <WatchlistButton
-          animeId={String(anime.mal_id)}
+          animeId={anime.id}
           animeTitle={title}
           animeImage={image}
           episodesTotal={anime.episodes}
@@ -36,11 +37,11 @@ export default function AnimeCard({ anime, priority = false }: { anime: Anime; p
         <div className="absolute bottom-0 inset-x-0 p-2 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
           <span className="inline-flex items-center gap-1 text-white text-xs bg-black/60 px-2 py-1 rounded backdrop-blur-sm">
             <Star size={12} className="fill-yellow-400 text-yellow-400" />
-            {anime.score ? anime.score.toFixed(2) : "–"}
+            {anime.score ? anime.score.toFixed(1) : "–"}
           </span>
-          {anime.type && (
+          {anime.format && (
             <span className="text-[10px] uppercase tracking-wide text-gray-200 bg-black/60 px-2 py-1 rounded">
-              {anime.type}
+              {formatLabel(anime.format)}
             </span>
           )}
         </div>
@@ -49,7 +50,7 @@ export default function AnimeCard({ anime, priority = false }: { anime: Anime; p
         {title}
       </h2>
       <p className="text-xs text-gray-400 line-clamp-1">
-        {[anime.year ?? anime.aired?.from?.slice(0, 4), anime.genres?.[0]?.name]
+        {[anime.year, anime.genres[0]]
           .filter(Boolean)
           .join(" · ")}
       </p>

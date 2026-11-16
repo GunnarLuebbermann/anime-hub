@@ -1,98 +1,61 @@
-export type NamedResource = {
-  mal_id: number;
-  type: string;
-  name: string;
-  url: string;
-};
-
-export type ImageSet = {
-  image_url: string;
-  small_image_url?: string;
-  large_image_url?: string;
-};
-
+/**
+ * Einheitliches Anime-Modell der App (aus der AniList API gemappt).
+ * `id` ist die MyAnimeList-ID, falls vorhanden (kompatibel zu bestehenden
+ * Watchlist-Einträgen), sonst "al-<AniList-ID>".
+ */
 export type Anime = {
-  mal_id: number;
-  url: string;
-  approved?: boolean;
+  id: string;
+  anilistId: number;
+  malId: number | null;
   title: string;
-  title_english?: string | null;
-  title_japanese?: string | null;
-  title_synonyms?: string[];
-  type?: string | null;
-  source?: string | null;
-  episodes?: number | null;
-  status?: string | null;
-  airing?: boolean;
-  aired?: {
-    from?: string | null;
-    to?: string | null;
-    string?: string;
-  };
-  duration?: string | null;
-  rating?: string | null;
-  score?: number | null;
-  scored_by?: number | null;
-  rank?: number | null;
-  popularity?: number | null;
-  members?: number | null;
-  favorites?: number | null;
-  synopsis?: string | null;
-  background?: string | null;
-  season?: string | null;
-  year?: number | null;
-  broadcast?: {
-    day?: string | null;
-    time?: string | null;
-    timezone?: string | null;
-    string?: string | null;
-  };
-  images: {
-    jpg: ImageSet;
-    webp?: ImageSet;
-  };
-  trailer?: {
-    youtube_id?: string | null;
-    url?: string | null;
-    embed_url?: string | null;
-  };
-  producers?: NamedResource[];
-  licensors?: NamedResource[];
-  studios?: NamedResource[];
-  genres?: NamedResource[];
-  explicit_genres?: NamedResource[];
-  themes?: NamedResource[];
-  demographics?: NamedResource[];
-  streaming?: { name: string; url: string }[];
-};
-
-export type Genre = {
-  mal_id: number;
-  name: string;
-  count?: number;
+  titleRomaji: string;
+  titleNative: string | null;
+  image: string;
+  imageLarge: string;
+  color: string | null;
+  banner: string | null;
+  format: string | null;
+  episodes: number | null;
+  status: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  season: string | null;
+  year: number | null;
+  duration: number | null;
+  score: number | null; // 0–10
+  members: number | null;
+  favourites: number | null;
+  rank: number | null;
+  popularityRank: number | null;
+  genres: string[];
+  tags: string[];
+  studios: string[];
+  source: string | null;
+  synopsis: string | null;
+  trailerYoutubeId: string | null;
+  streaming: { name: string; url: string }[];
+  siteUrl: string;
+  malUrl: string | null;
+  nextEpisode: { episode: number; airingAt: number } | null;
 };
 
 export type AnimeCharacter = {
-  character: {
-    mal_id: number;
-    name: string;
-    images: { jpg: { image_url: string }; webp?: { image_url: string } };
-  };
-  role: string;
-  favorites?: number;
-  voice_actors?: {
-    person: { mal_id: number; name: string };
-    language: string;
-  }[];
+  id: number;
+  name: string;
+  image: string;
+  role: "MAIN" | "SUPPORTING" | "BACKGROUND";
+  voiceActor: string | null;
 };
 
 export type AnimeRecommendation = {
-  entry: {
-    mal_id: number;
-    title: string;
-    images: { jpg: ImageSet; webp?: ImageSet };
-  };
-  votes: number;
+  id: string;
+  title: string;
+  image: string;
+};
+
+export type AnimeDetails = Anime & {
+  characters: AnimeCharacter[];
+  recommendations: AnimeRecommendation[];
 };
 
 export type PaginatedResponse<T> = {

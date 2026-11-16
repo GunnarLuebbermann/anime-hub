@@ -13,7 +13,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <p className="text-6xl">😵</p>
       <h1 className="text-2xl font-bold text-pink-400">Da ist etwas schiefgelaufen</h1>
       <p className="text-gray-400 max-w-md">
-        Die Daten konnten nicht geladen werden. Die Jikan API ist manchmal kurz überlastet – versuch es gleich noch einmal.
+        Die Daten konnten nicht geladen werden. Die AniList API ist manchmal kurz überlastet – versuch es gleich noch einmal.
       </p>
       <div className="flex gap-3">
         <button onClick={reset} className="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700 font-medium transition">
